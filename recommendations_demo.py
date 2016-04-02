@@ -60,47 +60,43 @@ print "RatingsSV Type:", type(ratingsSV)
 print "RatingsSV Count:", ratingsSV.count()
 
 
-
-model = KMeans.train(ratingsSV.values(), 10, maxIterations = 20, runs = 10)
-error = model.computeCost(ratingsSV.values())  #easy way out
-
-
-
-
-"""
+#next: include a validation set. train on train, get errors on validation
+#then: score == RMSE on the test set
 minError = float("inf")
 bestModel = None
 bestK = None
-#for i in range(10, 20) + range(50, 100) + (100, 200):
-for i in range(10, 20):
-
-#(data, k)
-    model = KMeans.train(ratingsSV, i, maxIterations = 20, runs = 10)
-    #model = KMeans.train(ratingsSV, 4, maxIterations = 20, runs = 10)
-    error = model.computeCost(ratingsSV.values())  #easy way out
+test_values = [10, 20, 50, 100, 200]
+error_storage = []
+for i in test_values:
+    model = KMeans.train(ratingsSV.values(), i, maxIterations = 20, runs = 10)
+    #test this error on the validation set once we make that
+    error = model.computeCost(ratingsSV.values())
+    error_storage.append(error)
     if error < minError:
         bestModel = model
         minError = error
         bestK = i
-    #save model once you have the best version
-    #model.save(sc, "KMeansModelCollaborative")
-    #model = KMeansModel.load(sc, "KMeansModelCollaborative")
 
-    #take one sample   the [0] is because this will be returned as a list -- not an index
-    user = ratingsSV(1)[0] #take a sample of 1 from the data set (use test data when doing this)
-    label = model.predict(user)   #outputs which cluster this user belongs to
-    # ==> a cluster id between 1 and k
-    clusterCenters = model.clusterCenters     #a list of centers (len == k)
-    clusterCenters[0] #len == total num of movies, each obs == avg rating for people in this group
-    movieID = 4
-    print "predicted value: ", clusterCenters[label][movieId]
+"""
+#save model once you have the best version
+#model.save(sc, "KMeansModelCollaborative")
+#model = KMeansModel.load(sc, "KMeansModelCollaborative")
+
+#take one sample   the [0] is because this will be returned as a list -- not an index
+user = ratingsSV(1)[0] #take a sample of 1 from the data set (use test data when doing this)
+label = model.predict(user)   #outputs which cluster this user belongs to
+# ==> a cluster id between 1 and k
+clusterCenters = model.clusterCenters     #a list of centers (len == k)
+clusterCenters[0] #len == total num of movies, each obs == avg rating for people in this group
+movieID = 4
+print "predicted value: ", clusterCenters[label][movieId]
 """
 
 
 
 
 #for i in range(10, 20):
-# ratingsSV = > RDD where each item is ( userID , SparseVector) 
+# ratingsSV = > RDD where each item is ( userID , SparseVector)
 
 ##    if error < minError:
 ##        bestModel = model
