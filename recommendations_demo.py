@@ -24,6 +24,7 @@ movieLensHomeDir = sys.argv[1]   # passed as argument
 #movieLensHomeDir = "/Users/jamesledoux/Documents/Big\ Data/movielens/medium/"
 sc =SparkContext()
 
+
 def parseRating(line):
     #uid::movieID::rating::timestamp
     parts = line.strip().split("::")
