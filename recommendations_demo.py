@@ -18,10 +18,10 @@ make a matrix:    cols movies, rows users
 if(len(sys.argv) != 2):
     print "usage: /sparkPath/bin/spark-submit  name.py  movieDirectory"
 
-conf = SparkConf().setAppName("KMeans Collaborative")
+conf = SparkConf().setAppName("KMeans Collaborative").set("spark.executor.memory", "7g")
 #sc = SparkContext(conf)
 movieLensHomeDir = sys.argv[1]   # passed as argument
-#movieLensHomeDir = "/Users/jamesledoux/Documents/Big\ Data/movielens/medium/"
+#movieLensHomeDir = "/Users/jamesledoux/Documents/BigData/netflixrecommender/"
 sc =SparkContext()
 
 
@@ -38,7 +38,7 @@ def vectorize(ratings, numMovies):
 
 ratings = loadRatings(sc, movieLensHomeDir)
 print "type of ratings obj: ", type(ratings)
-print "count of ratings: ", ratings.count()
+print "count of ratings: ", len(ratings.collect())
 print "sample rating: ", ratings.take(1)
 
 #ratings RDD:  (time stamp, (uid, mid, ratings) )
@@ -61,22 +61,39 @@ print "RatingsSV Type:", type(ratingsSV)
 print "RatingsSV Count:", ratingsSV.count()
 
 
-#next: include a validation set. train on train, get errors on validation
-#then: score == RMSE on the test set
+train, val, test = ratingsSV.randomSplit([.8, .1, .1])
+
 minError = float("inf")
 bestModel = None
 bestK = None
-test_values = [10, 20, 50, 100, 200]
+test_values = [125, 135]
 error_storage = []
+
 for i in test_values:
-    model = KMeans.train(ratingsSV.values(), i, maxIterations = 20, runs = 10)
-    #test this error on the validation set once we make that
-    error = model.computeCost(ratingsSV.values())
+    model = KMeans.train(train.values(), i, maxIterations=10, runs=10, epsilon=.00001)
+    error = model.computeCost(val.values())
     error_storage.append(error)
+    print "model with " + str(i) + " clusters done"
+    print "with error: " + str(error)
     if error < minError:
         bestModel = model
         minError = error
         bestK = i
+
+
+"""
+[5, 9, 12]
+[1018858.080614449, 988271.0902984664, 989009.7983816753]
+[12, 24, 36]
+[981547.3412806683, 967495.7386560757, 956038.1052810646]
+[40, 80, 120]
+[955456.0452899686, 941952.0370086507, 937651.9618938119]
+[160, 200]
+[958382.594830455, 957538.972414101]
+[120, 140, 150]
+[955591.5111267052, 960119.3043533752, 964760.2851641065]
+"""
+
 
 """
 #save model once you have the best version
