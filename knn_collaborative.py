@@ -8,37 +8,21 @@ from os.path import join, isfile, dirname
 from pyspark import SparkConf, SparkContext
 #from pyspark.mllib.recommendation import ALS
 
-"""
-first:
-export JAVA_HOME=/Library/Java/JavaVirtualMachines/jdk1.8.0_45.jdk/Contents/Home
-mvn -version
 
-then, when in the folder you're running this in:
-/Users/jamesledoux/spark-1.6.1/bin/pyspark
+#make these arguments so they work for other people
+ratingsDir = "/Users/jamesledoux/Documents/BigData/netflixrecommender/ratings.dat"
+moviesDir = "/Users/jamesledoux/Documents/Big Data/netflixrecommender/movies.dat"
 
-not sure why I need to do this first, but for now I need to re-do this for it to work
-"""
-
-"""
-run command:
-#/Users/jamesledoux/spark-1.6.1/bin/spark-submit python/MovieLensKNN.py /Users/jamesledoux/Downloads/tutorial/data/movielens/medium/ personalRatings.txt
-
-make content-based recommendations using KNN clustering on the MovieLens data set
-"""
-
-#def get_ratings():
-    #format: [user, movie, rating, timestamp]
-    #return [line.strip().split('::') for line in open('ratings.dat')]
+conf = SparkConf().setAppName("MovieLensKNN").set("spark.executor.memory", "7g")
+sc = SparkContext(conf=conf)
 
 def parseRating(line):
     fields = line.strip().split("::")
     return long(fields[3]) % 10, (int(fields[0]), int(fields[1]), float(fields[2]))
 
-
 def parseMovie(line):
     fields = line.split("::")
     return int(fields[0]), fields[1]
-
 
 def loadRatings(ratingsFile):
     if not isfile(ratingsFile):
@@ -53,20 +37,8 @@ def loadRatings(ratingsFile):
     else:
         return ratings
 
-def computeRmse(model, data, n):
-    predictions = model.predictAll(data.map(lambda x: (x[0], x[1])))
-    predictionsAndRatings = predictions.map(lambda x: ((x[0], x[1]), x[2])) \
-      .join(data.map(lambda x: ((x[0], x[1]), x[2]))) \
-      .values()
-    return sqrt(predictionsAndRatings.map(lambda x: (x[0] - x[1]) ** 2).reduce(add) / float(n))
-
-
+#mean squared distance between the movie ratings two users have in common
 def get_distance(user1, user2):
-    """
-    returns MSE for common ratings between two users
-    question: should I find a way to reward for a high number of common movies?
-              more shared movies => a better neighbor for prediction one would think
-    """
     common_movies = 0
     distances = []
     for movie in user1:
@@ -76,11 +48,10 @@ def get_distance(user1, user2):
     if common_movies == 0:
         MSE = float("inf")    #nothing in common, so max out the distance
     else:
-        MSE = np.mean(distances) + 5/common_movies   #penalty for few common movies
+        MSE = np.mean(distances) + 5/common_movies   #MSE + penalty for having fewer common movies
     return MSE
 
-
-def predicted_movies(knn):
+def predicted_movies(knn, n_recs):
     """
     for movie in knn rating history, get an adjusted mean rating and return these
     sorted greatest to least
@@ -95,31 +66,24 @@ def predicted_movies(knn):
                 movies[movie] = [i.values()[0][1][movie]]
     #mean val + a reward for movies seen by multiple neighbors (max poss. 1 pt. boost)
     for movie in movies:
-        movies[movie] = np.mean(movies[movie]) + len(movies[movie])/k
+        movies[movie] = np.mean(movies[movie]) + len(movies[movie])/k  #rationale: if more neighbors saw it and liked it, it is probably a better recommendation
     recommendations = []
     for i in movies:
         recommendations.append({i: movies[i]})
-    recommendations = sorted(movies, key=lambda x: movies[x], reverse = True)
-    return recommendations
+    recommendations = sorted(movies, key=lambda x: movies[x], reverse = True)  #movies w/ best avg score rated highest
+    return recommendations[0:n_recs]
 
-ratingsDir = "/Users/jamesledoux/Documents/Big Data/movielens/medium/ratings.dat"
-moviesDir = "/Users/jamesledoux/Documents/Big Data/movielens/medium/movies.dat"
-# set up environment
-conf = SparkConf() \
-  .setAppName("MovieLensKNN") \
-  .set("spark.executor.memory", "2g")
 
-sc = SparkContext(conf=conf)
 
 #(person id, movie id, rating out of 5)
 ratings = loadRatings(ratingsDir)
-#movies = dict(sc.textFile(moviesDir).map(parseMovie).collect())
 
+"""
+Create dict of users and their movie ratings
+Each user is a key. Each user's value is a dictionary, whose keys are movies and values are ratings.
+{user: {movie: rating, movie: rating}, user: {movie: rating}, user: {}}
+"""
 users = {}
-#movie_dict = {}   #do I use this anywhere?
-
-#create dict of users
-#user: {movie: rating, movie: rating}, user: {movie: rating}, user: {}}
 for (user, movie, rating) in ratings:
     if user not in users:
         users[user] = {}
@@ -134,10 +98,10 @@ k = 5  #also parameterize this
 
 #[ { user_id: (distance, {movie: rating, movie: rating}), user_id: (dist, {movie: rating })}]
 neighbors = []
-user_ratings = users[user_id]
+user_ratings = users[user_id]   # a dict of movie: rating pairs
 
 for user in users:
-    if user != user_id:
+    if user != user_id:   #if not the user you are finding neighbors for
         ratings = users[user]
         dist = {}
         dist[user] = (get_distance(ratings, user_ratings), ratings)
@@ -148,15 +112,21 @@ knn = nearest_neighbors[0:k]
 
 #get top 8 recommendations based on k-nearest neighbors
 movies = dict(sc.textFile(moviesDir).map(parseMovie).collect())
-recs = predicted_movies(knn)[0:8]
+#get the n top movies from your k nearest neighbors
+n = 8   #make k and n command line args
+recs = predicted_movies(knn, n)#[0:8]
 for i in recs:
     print movies[i]
 
-for i in recs
+"""
+eval:
+
+set aside 3 ratings for 10 different users
+see what nearest neighbors predict they will score these as. Get squared difference.
+"""
 
 """
 main:
-
 choose k (no. of neighbors), user_id, and number of desired recommendations
 
 predicted_movies(knn)[0:no_recs]
