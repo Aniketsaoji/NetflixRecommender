@@ -93,21 +93,12 @@ testError = model.computeCost(test.values())
 print "test error: " + str(testError)
 
 
-plt.plot(CVerrors)
-plt.xticks([0,1,2,3,4,5,6,7,8],test_values)
-plt.show()
-
-
-
-
-
-
 
 #now score model on the test data
 bestModel = KMeans.train(data.values(), bestK, maxIterations=10, runs=10, epsilon=.00001)
 error = model.computeCost(test.values())
 
-print "best model with k = " + str(k) " finished with error: " + str(error)
+print "best model with k = " + str(bestK) " finished with error: " + str(error)
 
 modelCenters = bestModel.clusterCenters
 
@@ -130,16 +121,9 @@ clusterId = model.predict(data2.lookup(singleRating[0])[0])
 #these are the recommended movies:
 samplesInRelevantCluster = trainingClusterLabels.lookup(clusterId)
 
+plt.plot(CVerrors)
+plt.xticks([0,1,2,3,4,5,6,7,8],test_values)
+plt.show()
 
-"""
-errors for [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 25]: best is 10
-[7127750.091446353, 7127750.414798906, 7127751.405619981, 7127754.433954623, 7127750.722505061, 7127838.947968733, 7127783.328832407, 7127750.988140488, 7127747.7471736595, 7127750.230260722, 7127754.734692583]
-
-errors for [8, 9, 10, 11, 12, 13, 14, 15]:  best is 8
-[7127746.282929602, 7127821.055026695, 7127750.747225445, 7127751.5867197495, 7127751.9117591, 7127756.4383017905, 7127754.529469332, 7127756.724856978]
-
-for [5, 6, 7, 8, 9, 10, 11, 12]: best is 12
-[7127750.287024926, 7127752.929726642, 7127746.997023219, 7127745.9775424525, 7127748.620281398, 7127751.659824361, 7127753.905078466, 7118664.342015211]
-"""
 
 sc.stop()

@@ -104,57 +104,13 @@ print 'best k: ' + str(bestK)
 plt.plot(CVerrors)
 plt.show()
 
-"""
-lista = CVerrors
-listb = [9067860.9215988759, 8889939.3706063181, 8825103.9420495424, 8762589.0398594737, 8724469.4796739593, 8713997.2527633812, 8679368.9173081759]
-listc = listb + lista
-plt.plot(listc)
-plt.show()
-"""
-#for the purposes of this exercise, the goal was to get the best k
-#but if we were to predict from here, we would run the following commented out code, which
-#is a final model with the optimal k, and then predict movies based off that
-"""
-model = KMeans.train(train.values(), bestK, maxIterations=10, runs=10, epsilon=.00001)
-error = model.computeCost(test.values())
-print "best model with k = " + str(k) " finished with error: " + str(error)
-"""
 
-"""
-80, 90, 100, 110
-[7803423.6893760711, 7791393.5365485651, 7786281.8075585756, 7774209.5088197934]
-[10, 20, 30, 40, 50, 60, 70]
-[9067860.9215988759, 8889939.3706063181, 8825103.9420495424, 8762589.0398594737, 8724469.4796739593, 8713997.2527633812, 8679368.9173081759]
-
-[5, 9, 12]
-[1018858.080614449, 988271.0902984664, 989009.7983816753]
-[12, 24, 36]
-[981547.3412806683, 967495.7386560757, 956038.1052810646]
-[40, 80, 120]
-[955456.0452899686, 941952.0370086507, 937651.9618938119]
-[160, 200]
-[958382.594830455, 957538.972414101]
-[120, 140, 150]
-[955591.5111267052, 960119.3043533752, 964760.2851641065]
-"""
+data = sc.parallelize(data)
+bestModel = KMeans.train(data.values(), bestK, maxIterations=10, runs=10, epsilon=.00001)
+testError = model.computeCost(test.values())
 
 
-
-#model.save(sc, "KMeansModelCollaborative")
-#model = KMeansModel.load(sc, "KMeansModelCollaborative")
-
-
-
-
-
-
-#for i in range(10, 20):
-# ratingsSV = > RDD where each item is ( userID , SparseVector)
-
-##    if error < minError:
-##        bestModel = model
-##        minError = error
-##        bestK = i
+#get a sample prediction besed on this model
 user = ratingsSV.values().take(5)[4] #take a sample of 1 from the data set (use test data when doing this)
 print "Type user:", type(user)
 print "User:", user
