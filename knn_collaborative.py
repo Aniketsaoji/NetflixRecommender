@@ -7,7 +7,7 @@ from operator import add
 from os.path import join, isfile, dirname
 from pyspark import SparkConf, SparkContext
 #from pyspark.mllib.recommendation import ALS
-
+#/Users/jamesledoux/spark-1.6.1/bin/pyspark
 
 #make these arguments so they work for other people
 ratingsDir = "/Users/jamesledoux/Documents/BigData/netflixrecommender/ratings.dat"

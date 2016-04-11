@@ -53,14 +53,15 @@ cross validation:
     validation MSE. Min validation MSE == best k.
 """
 data, test = ratingsSV.randomSplit([.9, .1])
-partitionSize = (len(data.collect())/10)
+num_folds = 3   #make this a command line arg
+partitionSize = (len(data.collect())/num_folds)
 
 i = 0
 j = partitionSize
 data = data.collect()
 cv_error_storage = []
 
-for w in range(10):
+for w in range(num_folds):
     #new train/validation split
     train = data[0:i] + data[j:]
     val = data[i:j]
@@ -69,7 +70,7 @@ for w in range(10):
     minError = float("inf")
     bestModel = None
     bestK = None
-    test_values = [80, 90, 100, 110]
+    test_values = [80, 90, 100, 110, 120, 130, 140]
     error_storage = []
     for x in test_values:
         model = KMeans.train(train.values(), x, maxIterations=10, runs=10, epsilon=.00001)
@@ -98,15 +99,18 @@ for i in CVerrors:
     if i < minError:
         minError = i
         bestK = test_values[j]
-        j = j+1
+    j = j+1
 print 'best k: ' + str(bestK)
 plt.plot(CVerrors)
 plt.show()
+
+"""
 lista = CVerrors
 listb = [9067860.9215988759, 8889939.3706063181, 8825103.9420495424, 8762589.0398594737, 8724469.4796739593, 8713997.2527633812, 8679368.9173081759]
 listc = listb + lista
 plt.plot(listc)
 plt.show()
+"""
 #for the purposes of this exercise, the goal was to get the best k
 #but if we were to predict from here, we would run the following commented out code, which
 #is a final model with the optimal k, and then predict movies based off that
