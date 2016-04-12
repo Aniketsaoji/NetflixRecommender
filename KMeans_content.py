@@ -4,20 +4,24 @@ from pyspark.mllib.feature import StandardScaler
 from pyspark.mllib.clustering import KMeans
 from pyspark.mllib.linalg import Vectors
 import numpy as np
+import sys
 import matplotlib.pyplot as plt
 
-#/Users/jamesledoux/spark-1.6.1/bin/pyspark
-
+#/Users/jamesledoux/spark-1.6.1/bin/spark-submit /Users/jamesledoux/Documents/BigData/netflixrecommender/content.py "/Users/jamesledoux/Documents/BigData/netflixrecommender/movie_features_dataset.dat/"
 conf = SparkConf().setAppName("KMeans-Content").set("spark.executor.memory", "7g")
 sc = SparkContext()
+
+if(len(sys.argv) != 2):
+    print "usage: /sparkPath/bin/spark-submit  name.py  'movieDirectory'"
 
 def parseRating(line):
     parts = line.strip().split("::")
     return (int(parts[0])-1, int(parts[1])-1, float(parts[2]))
 
-
 #load in input file
-path = "/Users/jamesledoux/Documents/BigData/netflixrecommender/movie_features_dataset.dat/"
+path = sys.argv[1]
+
+#path = "/Users/jamesledoux/Documents/BigData/netflixrecommender/movie_features_dataset.dat/"
 data = MLUtils.loadLibSVMFile(sc, path)
 
 labels = data.map(lambda x: x.label)
@@ -32,11 +36,11 @@ scaler = StandardScaler(withMean = False, withStd = True).fit(features)  #become
 #data2 = labels.zip(scaler.transform(features.map(lambda x: Vectors.dense(x.toArray()))))
 data2 = labels.zip(scaler.transform(features))   #use this line if having memory issues
 
-
 #hide 10% of the data for final test
 data, test = data2.randomSplit([.9, .1])
+
 #get size of chunks for 10-fold cross-validation
-num_folds = 3
+num_folds = 10
 partitionSize = (len(data.collect())/num_folds)   #parameterize this value as num_folds (in loop as well)
 
 #train/validate 10 times on each k
@@ -56,7 +60,7 @@ for w in range(num_folds):
     bestModel = None
     bestK = None
     test_values = [2,3,4,5,6,7,8,9,10]
-    #test_values = [2,3,4,5]
+    #test_values = [2,3]
     error_storage = []
     for x in test_values:
         model = KMeans.train(train.values(), x, maxIterations=10, runs=10, epsilon=.00001)
@@ -98,7 +102,7 @@ print "test error: " + str(testError)
 bestModel = KMeans.train(data.values(), bestK, maxIterations=10, runs=10, epsilon=.00001)
 error = model.computeCost(test.values())
 
-print "best model with k = " + str(bestK) " finished with error: " + str(error)
+print "best model with k = " + str(bestK) + " finished with error: " + str(error)
 
 modelCenters = bestModel.clusterCenters
 
@@ -107,6 +111,9 @@ trainingClusterLabels = train.map(lambda x: (bestModel.predict(x[1]), x[0]))
 
 ###################   example of this in action   ######################
 #get recommendations for a user based on movies he/she liked
+#add your own ratings data path to view this yourself
+
+"""
 path2 = "/Users/jamesledoux/Documents/BigData/netflixrecommender/ratings.dat" #make this a passed-in argument
 ratings = sc.textFile(path2).map(parseRating)  #make the parse rating function
 ratingsByUser = ratings.map(lambda x: (x[0], (x[1],x[2])))
@@ -120,6 +127,8 @@ clusterId = model.predict(data2.lookup(singleRating[0])[0])
 
 #these are the recommended movies:
 samplesInRelevantCluster = trainingClusterLabels.lookup(clusterId)
+"""
+
 
 plt.plot(CVerrors)
 plt.xticks([0,1,2,3,4,5,6,7,8],test_values)

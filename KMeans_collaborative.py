@@ -14,7 +14,6 @@ if(len(sys.argv) != 2):
 
 conf = SparkConf().setAppName("KMeans Collaborative").set("spark.executor.memory", "7g")
 movieLensHomeDir = sys.argv[1]   # passed as argument
-#movieLensHomeDir = "/Users/jamesledoux/Documents/BigData/netflixrecommender/"
 sc =SparkContext()
 
 
@@ -43,17 +42,9 @@ ratingsSV = vectorize( ratings.values(), numMovies)
 print "RatingsSV Type:", type(ratingsSV)
 print "RatingsSV Count:", ratingsSV.count()
 
-"""
-cross validation:
-1: set aside 10 percent of data for a final test
-2: get size of remaining data
-3: train / test model iteratively, where each iteration hides the next .10 of the
-    data as a validation set, keeping the rest as training data
-- keep MSE each time, and then take mean(sum(MSEs)) at each K, which will be the
-    validation MSE. Min validation MSE == best k.
-"""
+#cross validate
 data, test = ratingsSV.randomSplit([.9, .1])
-num_folds = 3   #make this a command line arg
+num_folds = 5   #make this a command line arg
 partitionSize = (len(data.collect())/num_folds)
 
 i = 0
@@ -71,6 +62,7 @@ for w in range(num_folds):
     bestModel = None
     bestK = None
     test_values = [80, 90, 100, 110, 120, 130, 140]
+    #test_values = [120]
     error_storage = []
     for x in test_values:
         model = KMeans.train(train.values(), x, maxIterations=10, runs=10, epsilon=.00001)
